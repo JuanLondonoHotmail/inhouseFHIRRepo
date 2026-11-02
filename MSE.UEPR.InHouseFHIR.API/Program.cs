@@ -17,6 +17,10 @@ using Microsoft.OpenApi.Models;
 
 using Moq;
 
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.MSSqlServer;
+
 using MSE.UEPR.FHIR.CORE.Config;
 using MSE.UEPR.FHIR.CORE.Mappings;
 using MSE.UEPR.FHIR.CORE.Redis;
@@ -28,6 +32,26 @@ using MSE.UEPR.FHIR.Services.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
+var sqlLogConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if (!string.IsNullOrWhiteSpace(sqlLogConnectionString))
+{
+    builder.Host.UseSerilog((_, _, loggerConfiguration) => loggerConfiguration
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .WriteTo.MSSqlServer(
+            connectionString: sqlLogConnectionString,
+            sinkOptions: new MSSqlServerSinkOptions
+            {
+                TableName = "Logs",
+                AutoCreateSqlTable = true
+            },
+            restrictedToMinimumLevel: LogEventLevel.Information));
+}
+
 var bypassAuth = builder.Configuration.GetSection("AzureAd:Enabled").Value != null
     && bool.TryParse(builder.Configuration.GetSection("AzureAd:Enabled").Value, out bool res) && !res;
 bool isRedisEnabled = false;
@@ -117,7 +141,7 @@ builder.Services.AddSingleton<Authentication>();
 
 // Register the FhirClient factory explicitly by passing only the 'provider'
 // Scoped: Once that web request finishes and returns a response to the user, that specific client instance is safely disposed.
-// This is perfectly safe for token management because web requests usually execute in under a few seconds—well before your 1-hour token expires.
+// This is perfectly safe for token management because web requests usually execute in under a few secondsï¿½well before your 1-hour token expires.
 // 3. The FHIR SDK Client factory mapping (Scoped per API request)
 builder.Services.AddScoped<FhirClient>(provider =>
 {
