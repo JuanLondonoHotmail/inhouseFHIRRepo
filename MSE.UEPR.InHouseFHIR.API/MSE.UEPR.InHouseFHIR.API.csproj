@@ -1,0 +1,61 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
+	  <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);1591</NoWarn>
+		<!-- Hides warnings for missing XML comments -->
+	</PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="AuthorizeAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="Hl7.Fhir.R4" Version="5.11.7" />
+    <PackageReference Include="Microsoft.Azure.StackExchangeRedis" Version="3.3.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.AzureAppServices" Version="9.0.5" />
+    <!--<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />-->
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.3.0" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.2.3" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="6.4.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MSE.UEPR.FHIR.Services\MSE.UEPR.FHIR.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MSB.ACP.Attendance.Data.Models">
+      <HintPath>..\Libraries\MSB.ACP.Attendance.Data.Models.dll</HintPath>
+    </Reference>
+    <Reference Include="MSB.Common.Model">
+      <HintPath>..\Libraries\MSB.Common.Model.dll</HintPath>
+    </Reference>
+    <Reference Include="MSE.UEPR.FHIR.CORE">
+      <HintPath>..\Libraries\MSE.UEPR.FHIR.CORE.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="wwwroot\custom-swagger.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,17 @@
+services:
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: "fhir-redis"
+    ports:
+      # Map the default Redis port
+      - "6379:6379"
+      # Map the default Redis Insight UI port
+      - "8001:8001"
+    volumes:
+      # Persist the data
+      - redis-stack-data:/data
+    restart: always
+
+volumes:
+  redis-stack-data:
+    driver: local

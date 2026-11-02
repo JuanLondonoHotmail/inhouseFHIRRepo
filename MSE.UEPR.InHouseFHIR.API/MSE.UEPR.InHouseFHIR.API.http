@@ -1,0 +1,6 @@
+@MSE.UEPR.FHIR.API.PoC_HostAddress = http://localhost:5078
+
+GET {{MSE.UEPR.FHIR.API.PoC_HostAddress}}/patient/
+Accept: application/json
+
+###
