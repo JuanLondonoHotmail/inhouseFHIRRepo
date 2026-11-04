@@ -6,6 +6,7 @@ using AutoMapper;
 
 using Hl7.Fhir.Rest;
 
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.AspNetCore.Rewrite;
@@ -19,6 +20,7 @@ using Moq;
 
 using Serilog;
 using Serilog.Events;
+using Serilog.Sinks.ApplicationInsights;
 using Serilog.Sinks.MSSqlServer;
 
 using MSE.UEPR.FHIR.CORE.Config;
@@ -33,24 +35,43 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 var sqlLogConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+    ?? builder.Configuration["ApplicationInsights:ConnectionString"];
 
-if (!string.IsNullOrWhiteSpace(sqlLogConnectionString))
+builder.Services.AddApplicationInsightsTelemetry();
+
+builder.Host.UseSerilog((_, _, loggerConfiguration) =>
 {
-    builder.Host.UseSerilog((_, _, loggerConfiguration) => loggerConfiguration
+    loggerConfiguration
         .MinimumLevel.Information()
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
         .Enrich.FromLogContext()
-        .WriteTo.Console()
-        .WriteTo.MSSqlServer(
+        .WriteTo.Console();
+
+    if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
+    {
+        loggerConfiguration.WriteTo.ApplicationInsights(
+            new TelemetryConfiguration
+            {
+                ConnectionString = applicationInsightsConnectionString
+            },
+            TelemetryConverter.Traces,
+            restrictedToMinimumLevel: LogEventLevel.Information);
+    }
+
+    if (!string.IsNullOrWhiteSpace(sqlLogConnectionString))
+    {
+        loggerConfiguration.WriteTo.MSSqlServer(
             connectionString: sqlLogConnectionString,
             sinkOptions: new MSSqlServerSinkOptions
             {
                 TableName = "Logs",
                 AutoCreateSqlTable = true
             },
-            restrictedToMinimumLevel: LogEventLevel.Information));
-}
+            restrictedToMinimumLevel: LogEventLevel.Information);
+    }
+});
 
 var bypassAuth = builder.Configuration.GetSection("AzureAd:Enabled").Value != null
     && bool.TryParse(builder.Configuration.GetSection("AzureAd:Enabled").Value, out bool res) && !res;
@@ -195,6 +216,7 @@ options =>
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging();
 app.UseDeveloperExceptionPage();
 // 1. CRITICAL: This allows the app to serve your custom-swagger.css file
 app.UseStaticFiles();
