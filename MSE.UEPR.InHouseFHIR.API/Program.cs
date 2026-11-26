@@ -130,6 +130,7 @@ builder.Services.AddHttpClient<PatientService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IAllergyIntoleranceService, AllergyIntoleranceService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IEncounterService, EncounterService>();
 builder.Services.AddSingleton<AppSettings>();
 builder.Services.AddHttpClient<IHttpClientToCerner, HttpClientToCerner>();
 
@@ -182,6 +183,7 @@ var mappingConfig = new MapperConfiguration(mc =>
     mc.AddProfile(new AddressMapper());
     mc.AddProfile(new AllergyInhouseMapper());
     mc.AddProfile(new OrganizationMapper());
+    mc.AddProfile(new EncounterMapper());
     // mc.DisableConstructorMapping();
 });
 //mappingConfig.AssertConfigurationIsValid();
