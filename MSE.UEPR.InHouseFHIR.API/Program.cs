@@ -182,6 +182,7 @@ var mappingConfig = new MapperConfiguration(mc =>
     mc.AddProfile(new AddressMapper());
     mc.AddProfile(new AllergyInhouseMapper());
     mc.AddProfile(new OrganizationMapper());
+    mc.AddProfile(new EncounterMapper());
     // mc.DisableConstructorMapping();
 });
 //mappingConfig.AssertConfigurationIsValid();
