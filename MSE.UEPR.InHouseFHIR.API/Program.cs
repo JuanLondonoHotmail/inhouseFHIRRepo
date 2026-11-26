@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 using Asp.Versioning;
 
@@ -34,13 +34,13 @@ using MSE.UEPR.FHIR.Services.Services;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
-var sqlLogConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var applicationInsightsConnectionString = builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]
     ?? builder.Configuration["ApplicationInsights:ConnectionString"];
 
+// 1. Keep this here. It sets up the core background telemetry tracking engines.
 builder.Services.AddApplicationInsightsTelemetry();
 
-builder.Host.UseSerilog((_, _, loggerConfiguration) =>
+builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 {
     loggerConfiguration
         .MinimumLevel.Information()
@@ -51,26 +51,15 @@ builder.Host.UseSerilog((_, _, loggerConfiguration) =>
 
     if (!string.IsNullOrWhiteSpace(applicationInsightsConnectionString))
     {
+        // 2. FIXED: Pull the existing TelemetryConfiguration from the active Dependency Injection container
+        var telemetryConfig = services.GetRequiredService<TelemetryConfiguration>();
+
         loggerConfiguration.WriteTo.ApplicationInsights(
-            new TelemetryConfiguration
-            {
-                ConnectionString = applicationInsightsConnectionString
-            },
-            TelemetryConverter.Traces,
+            telemetryConfig,
+            TelemetryConverter.Events, // 3. FIXED: Changed from Traces to Events so errors route to the exceptions table!
             restrictedToMinimumLevel: LogEventLevel.Information);
     }
 
-    if (!string.IsNullOrWhiteSpace(sqlLogConnectionString))
-    {
-        loggerConfiguration.WriteTo.MSSqlServer(
-            connectionString: sqlLogConnectionString,
-            sinkOptions: new MSSqlServerSinkOptions
-            {
-                TableName = "Logs",
-                AutoCreateSqlTable = true
-            },
-            restrictedToMinimumLevel: LogEventLevel.Information);
-    }
 });
 
 var bypassAuth = builder.Configuration.GetSection("AzureAd:Enabled").Value != null
@@ -226,11 +215,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MSE.UEPR.InHouseFHIR.API");
-    c.ConfigObject.AdditionalItems.Add("useUnsafeMarkdown", true);
-    c.InjectStylesheet("/custom-swagger.css");
-});
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MSE.UEPR.InHouseFHIR.API");
+        c.ConfigObject.AdditionalItems.Add("useUnsafeMarkdown", true);
+        c.InjectStylesheet("/custom-swagger.css");
+    });
 }
 
 if (app.Environment.IsProduction() && isRedisEnabled)

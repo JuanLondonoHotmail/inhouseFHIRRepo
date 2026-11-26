@@ -187,6 +187,12 @@ namespace MSE.UEPR.FHIR.Services.Services
                         logger.LogError(ex, "An AutoMapper runtime mapping error occurred processing patient ID resource conversion");
                         throw new ApplicationException("Data processing failed due to mapping error.", ex);
                     }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error occurred processing patient ID resource.");
+                        throw new ApplicationException("Error occurred processing patient ID resource.", ex);
+                    }
+                
                 }
             }
             catch (Exception ex) when (ex is not ApplicationException)
