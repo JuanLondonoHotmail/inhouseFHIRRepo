@@ -1,16 +1,8 @@
-using System.Globalization;
-
 using Asp.Versioning;
-
-using AutoMapper;
-
-using Hl7.Fhir.Model;
-using Hl7.Fhir.Serialization;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Web.Resource;
 
-using MSE.UEPR.FHIR.CORE.Enums;
 using MSE.UEPR.FHIR.CORE.Models;
 using MSE.UEPR.FHIR.Services.Interfaces;
 
@@ -25,8 +17,7 @@ namespace MSE.UEPR.FHIR.API.Controllers;
 public class EncounterController(
     ILogger<EncounterController> logger,
     IPatientService patientService,
-    IHttpClientToCerner client,
-    IMapper mapper) : ControllerBase
+    IEncounterService encounterService) : ControllerBase
 {
     [HttpGet("inpatient")]
     [SwaggerOperation(
@@ -69,52 +60,17 @@ public class EncounterController(
                 patient = await patientService.GetPatientByMrnNumberAsync(mrnNumber).ConfigureAwait(false);
             }
 
-            if (patient is null)
+            if (patient is null || string.IsNullOrWhiteSpace(patient.PatientId))
             {
                 return NoContent();
             }
 
-            var searchTerms = new List<string>
-            {
-                $"patient={Uri.EscapeDataString(patient.PatientId)}",
-                $"class={Uri.EscapeDataString("IMP")}" // FHIR ActCode for inpatient encounter.
-            };
+            var encounterGateways = await encounterService.SearchInpatientEncountersAsync(
+                patient.PatientId,
+                startDate,
+                endDate,
+                locationId).ConfigureAwait(false);
 
-            if (startDate.HasValue)
-            {
-                searchTerms.Add($"date={Uri.EscapeDataString($"ge{FormatFhirDate(startDate.Value)}")}");
-            }
-
-            if (endDate.HasValue)
-            {
-                searchTerms.Add($"date={Uri.EscapeDataString($"le{FormatFhirDate(endDate.Value)}")}");
-            }
-
-            if (!string.IsNullOrWhiteSpace(locationId))
-            {
-                searchTerms.Add($"location={Uri.EscapeDataString(locationId)}");
-            }
-
-            var response = await client.SearchAsync(Entity.Encounter, string.Join("&", searchTerms), logger)
-                .ConfigureAwait(false);
-
-            if (string.IsNullOrWhiteSpace(response))
-            {
-                return NoContent();
-            }
-
-            var bundle = new FhirJsonParser().Parse<Bundle>(response);
-            var encounters = bundle.Entry?
-                .Select(entry => entry.Resource)
-                .OfType<Encounter>()
-                .ToList();
-
-            if (encounters is not { Count: > 0 })
-            {
-                return NoContent();
-            }
-
-            var encounterGateways = mapper.Map<List<EncounterGateway>>(encounters);
             return encounterGateways is { Count: > 0 } ? Ok(encounterGateways) : NoContent();
         }
         catch (Exception ex)
@@ -126,6 +82,4 @@ public class EncounterController(
         }
     }
 
-    private static string FormatFhirDate(DateTimeOffset value) =>
-        value.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture);
 }

@@ -130,6 +130,7 @@ builder.Services.AddHttpClient<PatientService>();
 builder.Services.AddScoped<IPatientService, PatientService>();
 builder.Services.AddScoped<IAllergyIntoleranceService, AllergyIntoleranceService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IEncounterService, EncounterService>();
 builder.Services.AddSingleton<AppSettings>();
 builder.Services.AddHttpClient<IHttpClientToCerner, HttpClientToCerner>();
 
